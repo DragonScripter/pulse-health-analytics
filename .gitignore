@@ -1,0 +1,29 @@
+# Environment Secrets & Credentials
+.env
+*.env
+.env.local
+
+# Node.js / Backend
+backend/node_modules/
+backend/package-lock.json # Optional, but good if you want clean lock files per environment
+npm-debug.log*
+yarn-debug.log*
+
+# Python / AI Service
+ai-service/__pycache__/
+ai-service/*.py[cod]
+ai-service/venv/
+ai-service/.venv/
+
+# Android / Kotlin (andriod folder)
+andriod/.gradle/
+andriod/build/
+andriod/app/build/
+andriod/local.properties
+.idea/
+*.iml
+
+# OS and IDE System Files
+.DS_Store
+Thumbs.db
+.vscode/
