@@ -25,6 +25,9 @@ android {
             }
         }
     }
+    buildFeatures {
+        viewBinding= true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -32,6 +35,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.health.connect:connect-client:1.1.0")
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
