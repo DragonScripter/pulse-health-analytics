@@ -20,10 +20,10 @@ pulse-health-analystics/
 ```
 
 ## Data Flow for now
-1. Watch sends data to its crappy generic app over Bluetooth.
+1. Watch sends data to its crappy app over Bluetooth.
 2. Crappy app syncs it locally into Android **Health Connect**.
-3. My **Kotlin App** reads it from Health Connect and hits a Node.js endpoint with a massive JSON payload.
+3. My App reads it from Health Connect and hits a Node.js endpoint with a massive JSON payload.
 4. **Node.js** saves it to Postgres.
 5. When I want an AI trend check, Node forwards the history to **Python** via an internal HTTP request.
-6. Python calculates the slope ($y = mx + b$) using Scikit-Learn and yells back to Node if my health metrics are trending down or looking good.
+6. Python calculates the slope ($y = mx + b$) using Scikit-Learn and tells back to Node if my health metrics are trending down or looking good.
 
