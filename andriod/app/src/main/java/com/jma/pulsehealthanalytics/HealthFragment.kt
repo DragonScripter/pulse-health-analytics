@@ -8,15 +8,21 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.RestingHeartRateRecord
+import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.platform.client.impl.ipc.Client
 import com.jma.pulsehealthanalytics.databinding.FragmentHealthBinding
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.time.Duration
 
 class HealthFragment : Fragment(R.layout.fragment_health) {
 
@@ -27,7 +33,10 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private val permissions = setOf(
         HealthPermission.getReadPermission(HeartRateRecord::class),
-        HealthPermission.getReadPermission(StepsRecord::class)
+        HealthPermission.getReadPermission(StepsRecord::class),
+        HealthPermission.getReadPermission(SleepSessionRecord::class),
+        HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+        HealthPermission.getReadPermission(RestingHeartRateRecord::class)
     )
 
     private val requestPermissions = registerForActivityResult(
@@ -62,13 +71,15 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private fun readData() {
         viewLifecycleOwner.lifecycleScope.launch {
+
             val end = Instant.now()
             val start = end.minus(1, ChronoUnit.DAYS)
+            val sleepStart = end.minus(2, ChronoUnit.DAYS)
             val range = TimeRangeFilter.between(start, end)
+            //heart rate
+            val heartRecords = readAll<HeartRateRecord>(start, end)
 
-            val records = readAllHeartRate(start, end)
-
-            val samples = records
+            val samples = heartRecords
                 .flatMap { it.samples }
                 .sortedByDescending { it.time }
 
@@ -78,31 +89,45 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
             val lastTime = lastSample?.time
                 ?.atZone(ZoneId.systemDefault())
                 ?.toLocalTime()
+            //resting heart rate
+            val restingRecord = readAll<RestingHeartRateRecord>(start,end)
+                .maxByOrNull { it.time }
+                ?.beatsPerMinute
 
+            //sleep
+            val lastSleep = readAll<SleepSessionRecord>(sleepStart, end)
+                .maxByOrNull { it.endTime }
+            val sleepHours = lastSleep?.let{
+                Duration.between(it.startTime, it.endTime).toMinutes()/60.0
+            }
+            //steps
             val steps = client.aggregate(
                 AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), range)
             )[StepsRecord.COUNT_TOTAL]
 
+            //heart rate list
+            val list = samples.take(100).joinToString("\n") {
+                "${it.time.atZone(ZoneId.systemDefault()).toLocalTime()}  ${it.beatsPerMinute} bpm"
+            }
             binding.tvResult.text = getString(
                 R.string.health_result,
                 lastBpm?.toString() ?: getString(R.string.no_data),
                 lastTime?.toString() ?: "-",
-                (steps ?: 0).toString()
+                (steps ?: 0).toString(),
+                restingRecord?.toString() ?: getString(R.string.no_data),
+                sleepHours?.let { String.format("%.1f", it) } ?: getString(R.string.no_data),
+                list
             )
-            val list = samples.take(100).joinToString("\n") {
-                "${it.time.atZone(ZoneId.systemDefault()).toLocalTime()}  ${it.beatsPerMinute} bpm"
-            }
-            binding.tvResult.text = binding.tvResult.text.toString() + "\n\n" + list
         }
     }
-    private suspend fun readAllHeartRate(start: Instant, end: Instant): List<HeartRateRecord>{
-        val all = mutableListOf<HeartRateRecord>()
+    private suspend inline fun<reified T : Record> readAll(start: Instant, end: Instant): List<T>{
+        val all = mutableListOf<T>()
         var pageToken: String? = null
 
         do {
             val response = client.readRecords(
                 ReadRecordsRequest(
-                    recordType = HeartRateRecord::class,
+                    recordType = T::class,
                     timeRangeFilter = TimeRangeFilter.between(start,end),
                     pageSize = 1000,
                     pageToken = pageToken
