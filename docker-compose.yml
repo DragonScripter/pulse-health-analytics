@@ -7,9 +7,39 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5400:5432"
+      - "127.0.0.1:5400:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+    networks:
+      - pulse-net
+  pulse-node:
+    build: ./backend
+    container_name: pulse-node
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      API_KEY: ${API_KEY}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+    depends_on:
+      - database
+    networks:
+      - pulse-net
+ # Cloudflare Tunnel companion
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - pulse-node
+    networks:
+      - pulse-net
 volumes:
   postgres_data:
+
+networks:
+  pulse-net:
+    driver: bridge
