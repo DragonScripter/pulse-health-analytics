@@ -3,13 +3,27 @@ const express = require('express');
 const { Pool } = require('pg');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({limit: '5mb'})); 
 
 // 1. Postgres connection pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+if (!process.env.API_KEY) {
+  console.error("API_KEY is not set in the environment variables.");
+  process.exit(1);
+}
+
 // Health check: confirms the server is up
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+//lock for anything under /api
+
+app.use('/api', (req, res, next) => {
+  if (req.get('x-api-key') !== process.env.API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+});
 
 app.post('/api/metricsData', async (req, res) => {
   console.log("\n==================================================");
