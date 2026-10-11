@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">PulseHealth</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="read">Read watch data</string>
+    <string name="press">Press the button</string>
+    <string name="permission_denied">Permission denied</string>
+    <string name="health_update_required">Update Health Connect from the Play Store</string>
+    <string name="health_unavailable">Health Connect not available on this device</string>
+    <string name="no_data">no data</string>
+    <string name="health_result">Latest heart rate: %1$s bpm\nRecorded at: %2$s\nSteps (24h): %3$s\nResting heart rate: %4$s bpm\nSleep: %5$s h\n\n%6$s</string>
+</resources>
