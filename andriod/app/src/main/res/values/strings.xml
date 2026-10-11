@@ -9,4 +9,6 @@
     <string name="health_unavailable">Health Connect not available on this device</string>
     <string name="no_data">no data</string>
     <string name="health_result">Latest heart rate: %1$s bpm\nRecorded at: %2$s\nSteps (24h): %3$s\nResting heart rate: %4$s bpm\nSleep: %5$s h\n\n%6$s</string>
+    <string name="sent_ok">Sent to server</string>
+    <string name="sent_failed">Failed to send</string>
 </resources>

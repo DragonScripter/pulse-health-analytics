@@ -2,6 +2,7 @@ package com.jma.pulsehealthanalytics
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.health.connect.client.HealthConnectClient
@@ -16,21 +17,28 @@ import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
-import androidx.health.platform.client.impl.ipc.Client
 import com.jma.pulsehealthanalytics.databinding.FragmentHealthBinding
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.time.Duration
-
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import com.jma.pulsehealthanalytics.BuildConfig
 class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private var _binding: FragmentHealthBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var client: HealthConnectClient
-
+    private val http = OkHttpClient()
     private val permissions = setOf(
         HealthPermission.getReadPermission(HeartRateRecord::class),
         HealthPermission.getReadPermission(StepsRecord::class),
@@ -118,6 +126,40 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
                 sleepHours?.let { String.format("%.1f", it) } ?: getString(R.string.no_data),
                 list
             )
+            val payload = JSONObject().apply {
+                put("steps", steps ?: 0)
+                put("sleepHours", sleepHours ?: JSONObject.NULL)
+                put("heartRate", JSONArray().apply {
+                    samples.forEach {
+                        put(
+                            JSONObject()
+                                .put("time", it.time.toString())
+                                .put("bpm", it.beatsPerMinute)
+                        )
+                    }
+                })
+            }
+            val ok = sendToServer(payload)
+            Toast.makeText(
+                requireContext(),
+                getString(if (ok ) R.string.sent_ok else R.string.sent_failed),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    private suspend fun sendToServer(payload: JSONObject): Boolean = withContext(Dispatchers.IO){
+        try {
+            val body = payload.toString().toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url("${BuildConfig.API_URL}/api/metricsData")
+                .addHeader("x-api-key", BuildConfig.API_KEY)
+                .post(body)
+                .build()
+            http.newCall(request).execute().use { it.isSuccessful }
+        }
+        catch (e: Exception){
+            android.util.Log.e("Send", "failed", e)
+            false
         }
     }
     private suspend inline fun<reified T : Record> readAll(start: Instant, end: Instant): List<T>{

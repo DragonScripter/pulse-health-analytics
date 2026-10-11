@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.health.READ_SLEEP"/>
     <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION"/>
     <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE"/>
-    
+    <uses-permission android:name="android.permission.INTERNET"/>
     <queries>
         <package android:name="com.google.android.apps.healthdata"/>
     </queries>

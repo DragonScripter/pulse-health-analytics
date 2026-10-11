@@ -1,3 +1,17 @@
+import java.util.Properties
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()){
+        f.inputStream().use {
+            load(it)
+        }
+    }
+}
+
+
+
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -16,6 +30,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_URL", "\"${localProps.getProperty("API_URL", "")}\"")
+        buildConfigField("String", "API_KEY",  "\"${localProps.getProperty("API_KEY", "")}\"")
+
+
     }
 
     buildTypes {
@@ -27,6 +45,7 @@ android {
     }
     buildFeatures {
         viewBinding= true
+        buildConfig = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -35,6 +54,7 @@ android {
 }
 
 dependencies {
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.health.connect:connect-client:1.1.0")
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
