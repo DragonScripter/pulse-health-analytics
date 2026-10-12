@@ -27,3 +27,28 @@ pulse-health-analystics/
 5. When I want an AI trend check, Node forwards the history to **Python** via an internal HTTP request.
 6. Python calculates the slope ($y = mx + b$) using Scikit-Learn and tells back to Node if my health metrics are trending down or looking good.
 
+
+## Reconfigured Data Pipeline
+
+Old Architecture (Deprecating)
+### Before (Deprecated due to sync bugs)
+```text
+[USMECBL Watch] ──> [GloryFit App] ──(Sync/Writing Errors)──> [Health Connect] ──> [My App] ──> [Node Server]
+```
+* **The Issue:** GloryFit suffered critical sync failures, producing broken records and massive data inconsistency gaps inside Android Health Connect.
+
+### Target (In Development / Active Goal Direct Pipeline)
+```text
+[USMECBL Watch] ───(Direct Raw BLE Stream)───> [My Android App] ───(JSON/HTTP)───> [Node.js Backend]
+                                                                                           │
+                                              ┌────────────────────────────────────────────┘
+                                              ▼
+                                      ┌───────────────┐        (Internal HTTP)        ┌───────────────┐
+                                      │  PostgreSQL   │ <───────────────────────────> │  AI Service   │
+                                      │ (Persistence) │                               │ (Scikit-Learn)│
+                                      └───────────────┘                               └───────────────┘
+```
+
+
+
+
