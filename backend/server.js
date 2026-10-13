@@ -42,6 +42,42 @@ app.post('/api/metricsData', async (req, res) => {
   });
 })
 
+// NEW ROUTE: Direct database saver for your manual workout entries
+app.post('/api/workouts', async (req, res) => {
+  console.log("\n==================================================");
+  console.log(`WORKOUT SUBMISSION AT: ${new Date().toISOString()}`);
+  console.log("==================================================");
+  console.log(JSON.stringify(req.body, null, 2));
+
+  const { exercise_name, sets, reps, weight } = req.body;
+  const userId = 1; // Temporary hardcoded sandbox profile fallback
+
+  try {
+    // Save data parameters right into your PostgreSQL table layer
+    await pool.query(
+      'INSERT INTO workouts (user_id, exercise_name, sets, reps, weight) VALUES (\$1, \$2, \$3, \$4, \$5)',
+      [userId, exercise_name, sets, reps, weight]
+    );
+
+    console.log(`[SUCCESS] Saved ${exercise_name} session directly to Postgres!`);
+    console.log("==================================================\n");
+
+    // Returns a fallback text recommendation so your tvAiResult text view still updates smoothly
+    res.status(200).json({
+      message: "Workout tracked successfully",
+      ai_analysis: {
+        volume_slope: 0.0,
+        recommendation: `Saved locally! Automated volume calculation: ${sets * reps * weight} lbs.`
+      }
+    });
+
+  } catch (err) {
+    console.error("Postgres Insertion Failure:", err.message);
+    console.log("==================================================\n");
+    res.status(500).json({ error: "Failed to persist metrics to database." });
+  }
+});
+
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running on port ${process.env.PORT || 3000}`);
