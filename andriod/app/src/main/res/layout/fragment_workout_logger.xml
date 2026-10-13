@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F8F9FA"
+    tools:context=".WorkoutLogger">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Screen Header Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_workout"
+            android:textSize="24sp"
+            android:textColor="#212529"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="@string/track"
+            android:textColor="#6C757D"
+            android:textSize="20sp" />
+
+        <!-- Input Field: Exercise Name -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/exercise_name"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#495057"
+            android:layout_marginBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etExerciseName"
+            android:layout_width="334dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:drawable/editbox_background_normal"
+            android:backgroundTint="#FFFFFF"
+            android:hint="@string/e_g_deadlift"
+            android:inputType="textCapWords"
+            android:textColor="#000000"
+            android:textColorHint="#555555"
+            android:paddingHorizontal="16dp"
+            android:autofillHints="none" />
+
+        <!-- Input Field: Sets -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sets"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#495057"
+            android:layout_marginBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etSets"
+            android:layout_width="314dp"
+            android:layout_height="49dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:drawable/editbox_background_normal"
+            android:backgroundTint="#FFFFFF"
+            android:hint="@string/_set"
+            android:inputType="number"
+            android:paddingHorizontal="16dp"
+            android:textColor="#000000"
+            android:textColorHint="#555555"
+            android:autofillHints="none" />
+
+        <!-- Input Field: Reps -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/reps"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#495057"
+            android:layout_marginBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etReps"
+            android:layout_width="333dp"
+            android:layout_height="59dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:drawable/editbox_background_normal"
+            android:backgroundTint="#FFFFFF"
+            android:hint="@string/_reps"
+            android:inputType="number"
+            android:paddingHorizontal="16dp"
+            android:textColor="#000000"
+            android:textColorHint="#555555"
+            android:autofillHints="none" />
+
+        <!-- Input Field: Weight -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/weight_lbs"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#495057"
+            android:layout_marginBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etWeight"
+            android:layout_width="326dp"
+            android:layout_height="48dp"
+            android:layout_marginBottom="24dp"
+            android:background="@android:drawable/editbox_background_normal"
+            android:backgroundTint="#FFFFFF"
+            android:hint="@string/_0"
+            android:inputType="numberDecimal"
+            android:paddingHorizontal="16dp"
+            android:textColor="#000000"
+            android:textColorHint="#555555"
+            android:autofillHints="none" />
+
+        <!-- Primary Action Button -->
+        <Button
+            android:id="@+id/btnSubmit"
+            android:layout_width="258dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="24dp"
+            android:text="@string/submit"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- AI Response Feedback Card Layout Container -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/dialog_holo_light_frame"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="@string/pulse_ai_insight"
+                android:textColor="#004085"
+                android:backgroundTint="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+
+
+            <TextView
+                android:id="@+id/tvAiResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="3sp"
+                android:text="@string/aiResult"
+                android:textColor="#333333"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

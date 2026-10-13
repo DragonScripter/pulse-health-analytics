@@ -4,25 +4,77 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="24dp"
+    android:background="#F8F9FA"
     tools:context=".HealthFragment">
 
-    <Button
-        android:id="@+id/btnRead"
+    <!-- Dashboard Header Section -->
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/read" />
+        android:text="@string/health_dashboard"
+        android:textSize="24sp"
+        android:textColor="#212529"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="4dp"/>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/sync_health"
+        android:textSize="14sp"
+        android:textColor="#6C757D"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Action Buttons Row Layer -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="24dp"
+        style="?android:attr/buttonBarStyle">
+
+        <Button
+            android:id="@+id/btnRead"
+            android:layout_width="0dp"
+            android:layout_height="54dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="@string/read"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            style="?android:attr/buttonBarButtonStyle" />
+
+        <Button
+            android:id="@+id/btnGoToLogger"
+            android:layout_width="0dp"
+            android:layout_height="54dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="@string/log_workout"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            style="?android:attr/buttonBarButtonStyle" />
+
+    </LinearLayout>
+
+    <!-- Scrollable Metrics Dashboard Frame -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="16dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:background="@android:drawable/dialog_holo_light_frame"
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/tvResult"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/press"
-            android:textSize="16sp" />
+            android:textColor="#212529"
+            android:textSize="15sp"
+            android:lineSpacingExtra="6sp"
+            android:fontFamily="sans-serif" />
     </ScrollView>
 </LinearLayout>

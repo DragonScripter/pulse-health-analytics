@@ -11,4 +11,20 @@
     <string name="health_result">Latest heart rate: %1$s bpm\nRecorded at: %2$s\nSteps (24h): %3$s\nResting heart rate: %4$s bpm\nSleep: %5$s h\n\n%6$s</string>
     <string name="sent_ok">Sent to server</string>
     <string name="sent_failed">Failed to send</string>
+    <string name="submit">Submit Workout</string>
+    <string name="track">Track volume trends for automated progressive overload</string>
+    <string name="log_workout">Log Your Workout</string>
+    <string name="exercise_name">Exercise Name</string>
+    <string name="e_g_deadlift">e.g., Deadlift</string>
+    <string name="sets">Sets</string>
+    <string name="reps">Reps</string>
+    <string name="weight_lbs">Weight (lbs)</string>
+    <string name="_0">0.0</string>
+    <string name="aiResult">Your progressive overload analysis will appear here after your submit your metrics.(Not wired yet)</string>
+    <string name="pulse_ai_insight">Pulse AI Insight</string>
+    <string name="_set">0</string>
+    <string name="_reps">0</string>
+    <string name="syncing">Syncing with Pulse Analytics Engine...(Not wired)</string>
+    <string name="health_dashboard">Health Dashboard</string>
+    <string name="sync_health">Sync data from Android Health Connect</string>
 </resources>

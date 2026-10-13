@@ -31,7 +31,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import com.jma.pulsehealthanalytics.BuildConfig
 class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private var _binding: FragmentHealthBinding? = null
@@ -58,6 +57,13 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentHealthBinding.bind(view)
         binding.btnRead.setOnClickListener { checkAndRead() }
+        binding.btnGoToLogger.setOnClickListener {
+            val workoutFragment = WorkoutLogger()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, workoutFragment)
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     private fun checkAndRead() {
