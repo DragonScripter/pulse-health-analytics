@@ -43,3 +43,4 @@ volumes:
 networks:
   pulse-net:
     driver: bridge
+    name: pulse-net
