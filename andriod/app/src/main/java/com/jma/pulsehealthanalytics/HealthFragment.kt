@@ -37,7 +37,7 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
     private val binding get() = _binding!!
 
     private lateinit var client: HealthConnectClient
-    private val http = OkHttpClient()
+    private val http = ApiClient.http
     private val permissions = setOf(
         HealthPermission.getReadPermission(HeartRateRecord::class),
         HealthPermission.getReadPermission(StepsRecord::class),
@@ -158,7 +158,6 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
             val body = payload.toString().toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
                 .url("${BuildConfig.API_URL}/api/metricsData")
-                .addHeader("x-api-key", BuildConfig.API_KEY)
                 .post(body)
                 .build()
             http.newCall(request).execute().use { it.isSuccessful }

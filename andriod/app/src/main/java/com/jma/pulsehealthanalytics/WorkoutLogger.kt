@@ -24,8 +24,7 @@ import kotlin.coroutines.resume
 
 class WorkoutLogger : Fragment() {
     private lateinit var binding: FragmentWorkoutLoggerBinding
-    private val http = OkHttpClient()
-
+    private val http get() = ApiClient.http
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -91,7 +90,6 @@ class WorkoutLogger : Fragment() {
             val body = payload.toString().toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
                 .url("${BuildConfig.API_URL}/api/workouts")
-                .addHeader("x-api-key", BuildConfig.API_KEY)
                 .post(body)
                 .build()
 
