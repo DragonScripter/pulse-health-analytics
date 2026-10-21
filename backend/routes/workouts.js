@@ -7,7 +7,7 @@ router.post('/', async (req, res) => {
   console.log(JSON.stringify(req.body, null, 2));
 
   const { exercise_name, sets, reps, weight } = req.body;
-  const userId = 2; // Temporary hardcoded sandbox profile
+  const userId = req.user.user_id;; // Temporary hardcoded sandbox profile
 
   try {
     await pool.query(

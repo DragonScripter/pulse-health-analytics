@@ -20,7 +20,6 @@ services:
       - "3000:3000"
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      API_KEY: ${API_KEY}
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
     depends_on:
       - database
