@@ -7,7 +7,7 @@ router.post('/', (req, res) => {
 
   res.status(200).json({
     status: 'intercepted',
-    message: 'Data structure caught in Node terminal. Inspect logs now!'
+    message: 'Data structure caught in Node terminal. Inspect logs now!',
   });
 });
 

@@ -12,7 +12,7 @@ app.use(express.json({ limit: '5mb' }));
 
 // Public
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
-
+app.use('/api/auth', require('./routes/auth'));     
 // Everything under /api requires the key
 app.use('/api', requireApiKey, require('./routes'));
 
