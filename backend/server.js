@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const requireApiKey = require('./middleware/apiKey');
 
-if (!process.env.API_KEY) {
-  console.error('API_KEY is not set in the environment variables.');
+if (!process.env.API_KEY || !process.env.JWT_SECRET) {
+  console.error('API_KEY and JWT_SECRET must be set.');
   process.exit(1);
 }
 

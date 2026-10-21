@@ -4,12 +4,15 @@ const {
   MIN_PASSWORD_LENGTH,
   MAX_PASSWORD_BYTES,
   BCRYPT_SALT_ROUNDS,
+  LOGIN_MAX_ATTEMPTS,
+  JWT_EXPIRES_IN,
 } = require('../constants');
 const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const pool = require('../db');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 
 const signupLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -17,6 +20,7 @@ const signupLimiter = rateLimit({
   message: { error: 'Too many attempts. Try again later.' },
 });
 
+//sign up 
 router.post('/signup', signupLimiter, async (req, res) => {
   const { email, password } = req.body;
 
@@ -76,6 +80,55 @@ router.post('/signup', signupLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Unable to create account with that email.' });
     }
     console.error('Signup failure:', err.message);
+    return res.status(500).json({ error: 'Something went wrong.' });
+  }
+});
+
+//login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: LOGIN_MAX_ATTEMPTS,
+  message: { error: 'Too many attempts. Try again later.' },
+});
+
+// (prevents timing-based email guessing).
+const DUMMY_HASH = bcrypt.hashSync('dummy-password', BCRYPT_SALT_ROUNDS);
+
+router.post('/login', loginLimiter, async (req, res) => {
+  const { email, password } = req.body;
+
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    const result = await pool.query(
+      'SELECT user_id, email, password_hash FROM users WHERE email = $1',
+      [cleanEmail],
+    );
+    const user = result.rows[0];
+
+    // Always run compare, even if the user doesn't exist
+    const match = await bcrypt.compare(
+      password,
+      user ? user.password_hash : DUMMY_HASH,
+    );
+
+    if (!user || !match) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const token = jwt.sign(
+      { user_id: user.user_id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN },
+    );
+
+    return res.status(200).json({ token });
+  } catch (err) {
+    console.error('Login failure:', err.message);
     return res.status(500).json({ error: 'Something went wrong.' });
   }
 });
