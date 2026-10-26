@@ -50,5 +50,9 @@ Old Architecture (Deprecating)
 ```
 
 
-
-
+- **Planned:** the app will forward readings to the Node.js backend, then Postgres and the AI service (not built yet).
+- **How it works:** The watch has no standard Heart Rate Service (`0x180D`), so the app connects by MAC address and subscribes to vendor characteristics. It decodes the raw bytes on the fly with no GloryFit or Health Connect involved.
+- **Heart rate and SpO2:** characteristic `0x33F2` (service `0x55FF`). The last byte is the value, and the first byte tells the two apart (`E5` = heart rate, `34` = SpO2).
+- **Steps, distance, calories:** characteristic `0xFEA1` (service `0xFEE7`), packed as little-endian 3-byte integers. Distance is in metres and calories in kcal.
+- **Status:** heart rate, SpO2, steps, distance, and calories are all confirmed against the watch screen.
+- **TODO:** sleep isn't decoded yet. The watch stores it and only sends it on request
