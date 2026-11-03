@@ -5,7 +5,7 @@ A personal health tracking app I'm putting together because my smartwatch (USMEC
 I'm also using this to screw around with some Machine Learning stuff for an AI class I'm taking before graduating.
 
 ## The Stack 
-* **Frontend:** A native Android App written in **Kotlin** (Jetpack Compose). It hooks into **Android Health Connect** to pull steps, heart rate, and sleep data out of the phone.
+* **Frontend:** A native Android app written in **Kotlin** (XML layouts). It connects to the watch directly over **BLE**, decodes the data, and posts it to the backend.
 * **Main Backend:** **Node.js (Express)**. I'm comfortable with Node, so this handles the easy stuff: user logins, saving data to **PostgreSQL**, and managing the friends list(later).
 * **AI Service:** A small **Python** container. I didn't want to write a full backend in Python, so Node just passes arrays of data to this Python container whenever I want to calculate a linear regression trend line (like 7-day weight velocity or heart rate changes over time).
 * **Environment:** **Docker Compose** to spin up Node, Python, and Postgres locally.
@@ -51,41 +51,56 @@ Old Architecture (Deprecating)
 
 ## Watch data storage
 
-Data from the watch is stored in two tiers, so nothing is lost and daily stats can be calculated later.
+Data from the watch is stored in two tiers, so nothing is lost and daily stats can be calculated later. The app posts each reading to `POST /api/watch-metrics`.
 
-### Tier 1: raw samples (`watch_samples`)
-Every reading from the watch is stored as-is, with no cleaning or filtering for now.
+### Tier 1: raw samples
+Every reading is stored as-is, with no cleaning or filtering for now.
 
-| Column | Notes |
-|---|---|
-| `userId` | From the auth token |
-| `metric` | `heart_rate` or `spo2` |
-| `value` | Integer |
-| `capturedAt` | **Phone-side capture time** (UTC), not server receive time, so delayed or retried posts land in the right place |
+| Table | Columns | Notes |
+|---|---|---|
+| `heart_rate` | `user_id`, `time`, `bpm` | Primary key `(user_id, time)`; duplicates are ignored so retries are safe |
+| `spo2_samples` | `user_id`, `time`, `spo2` | Same key and behaviour |
 
-- Unique constraint on `(userId, metric, capturedAt)`; on conflict, ignore, so retries are safe.
+- `time` is the **phone-side capture time** (UTC), not the server receive time, so delayed or retried posts land in the right place.
 - Heart rate can arrive every few seconds. For now every sample is accepted, with no throttling or batching.
-- This is the source of truth for the heart rate stats planned later: average, peak, lowest and heart rate recovery (peak to a reading 1-2 minutes after the workout ends).
+- These tables are the source of truth for the heart rate stats planned later: average, peak, lowest and heart rate recovery.
 
-### Tier 2: daily totals (`watch_daily`)
-Steps, distance and calories are cumulative counters on the watch, so they are stored as one row per user per day.
+### Tier 2: daily totals (`daily_metrics`)
+One row per user per day (`user_id`, `day`), with `spo2` (latest reading), `steps`, `distance_metres`, `calories_kcal` and `updated_at`.
 
-| Column | Notes |
-|---|---|
-| `userId` | From the auth token |
-| `date` | The user's local date, as sent by the phone |
-| `steps` | Integer |
-| `distanceMetres` | Integer |
-| `caloriesKcal` | Integer |
-| `updatedAt` | Last upsert time |
+- Each incoming reading **upserts** the row.
+- Steps, distance and calories keep the highest value seen that day (`GREATEST(existing, incoming)`), so an out-of-order or delayed post can't move a total backwards.
+- `day` is the user's local date, as sent by the phone.
 
-- Unique on `(userId, date)`; each incoming reading **upserts** the row.
-- Keep the highest value seen for the day (`GREATEST(existing, incoming)`) so an out-of-order or delayed post can't move a total backwards.
+### Request payload
+```json
+{
+  "captured_at": "2026-11-03T19:30:00.123Z",
+  "date": "2026-11-03",
+  "heart_rate": 72,
+  "spo2": 97,
+  "steps": 4330,
+  "distance_metres": 3210,
+  "calories_kcal": 148
+}
+```
+All metrics are optional, but at least one is required. Heart rate must be 20-250 and SpO2 1-100.
+
+## How the watch connection works
+The watch has no standard Heart Rate Service (`0x180D`), so the app connects by MAC address (set as `WATCH_MAC` in `local.properties`) and subscribes to vendor characteristics. It decodes the raw bytes on the fly with no GloryFit or Health Connect involved.
+
+| Data | Service | Characteristic | Format |
+|---|---|---|---|
+| Heart rate, SpO2 | `0x55FF` | `0x33F2` | Last byte is the value; first byte identifies it (`E5` = heart rate, `34` = SpO2) |
+| Steps, distance, calories | `0xFEE7` | `0xFEA1` | 1-byte header, then three little-endian 3-byte integers (distance in metres, calories in kcal) |
+
+Heart rate, SpO2, steps, distance and calories are all confirmed against the watch screen.
 
 ### Not in scope yet
 - Data cleaning / outlier filtering (e.g. spurious 0 or 255 readings)
-- Pre-computed heart rate stats (calculated on demand from `watch_samples`)
-- Sleep data (the watch only sends it on request and the app doesn't decode it yet)
+- Pre-computed heart rate stats (calculated on demand from the raw tables)
+- Sleep data: the watch stores it and only sends it on request, and the app doesn't decode it yet
+- The AI service: planned, Node will forward readings from Postgres to it, but it's not built yet
 
 
 
