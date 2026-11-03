@@ -31,6 +31,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private var _binding: FragmentHealthBinding? = null
@@ -52,6 +59,13 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
         if (granted.containsAll(permissions)) readData()
         else binding.tvResult.text = getString(R.string.permission_denied)
     }
+    private val watchVm: WatchStreamViewModel by viewModels()
+
+    private val blePermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) watchVm.start()
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -63,6 +77,31 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
                 .replace(R.id.fragment_container, workoutFragment)
                 .addToBackStack(null)
                 .commit()
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                watchVm.metrics.collect { m ->
+                    val none = getString(R.string.no_data)
+                    binding.tvWatch.text = getString(
+                        R.string.watch_live,
+                        m.heartRate?.toString() ?: none,
+                        m.spo2?.toString() ?: none,
+                        m.steps?.toString() ?: none,
+                        m.distanceMetres?.toString() ?: none,
+                        m.caloriesKcal?.toString() ?: none,
+                        if (m.connected) "connected" else "disconnected",
+                    )
+                }
+            }
+        }
+
+        if (ContextCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            watchVm.start()
+        } else {
+            blePermission.launch(Manifest.permission.BLUETOOTH_CONNECT)
         }
     }
 

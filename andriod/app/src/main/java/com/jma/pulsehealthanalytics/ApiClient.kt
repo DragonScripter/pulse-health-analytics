@@ -56,6 +56,25 @@ object ApiClient {
                 AuthResult(-1, "Network error")
             }
         }
+        suspend fun postWatchMetrics(fields: Map<String, Int>): Int =
+            withContext(Dispatchers.IO) {
+                try {
+                    val json = JSONObject()
+                        .put("captured_at", java.time.Instant.now().toString())
+                        .put("date", java.time.LocalDate.now().toString())
+                    fields.forEach { (k, v) -> json.put(k, v) }
+
+                    val request = Request.Builder()
+                        .url("${BuildConfig.API_URL}/api/watch-metrics")
+                        .post(json.toString().toRequestBody("application/json".toMediaType()))
+                        .build()
+
+                    http.newCall(request).execute().use { it.code }
+                } catch (e: Exception) {
+                    android.util.Log.e("ApiClient", "watch post failed", e)
+                    -1
+                }
+            }
 
 
 

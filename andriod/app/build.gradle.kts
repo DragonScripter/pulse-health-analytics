@@ -32,6 +32,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_URL", "\"${localProps.getProperty("API_URL", "")}\"")
         buildConfigField("String", "API_KEY",  "\"${localProps.getProperty("API_KEY", "")}\"")
+        buildConfigField("String", "WATCH_MAC", "\"${localProps.getProperty("WATCH_MAC", "")}\"")   // new
 
 
     }
@@ -54,6 +55,9 @@ android {
 }
 
 dependencies {
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.health.connect:connect-client:1.1.0")

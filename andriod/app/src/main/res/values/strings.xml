@@ -40,4 +40,8 @@
     <string name="email">Email</string>
     <string name="log_in">Log in</string>
     <string name="no_account_sign_up">No account? Sign up</string>
+    <string name="watch_waiting">Watch: waiting for data…</string>
+    <string name="watch_live">Watch: HR %1$s bpm | SpO2 %2$s%% | Steps %3$s | %4$s m | %5$s kcal | %6$s</string>
+    <string name="watch_connected">connected</string>
+    <string name="watch_disconnected">disconnected</string>
 </resources>
