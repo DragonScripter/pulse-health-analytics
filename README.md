@@ -96,6 +96,63 @@ The watch has no standard Heart Rate Service (`0x180D`), so the app connects by 
 
 Heart rate, SpO2, steps, distance and calories are all confirmed against the watch screen.
 
+
+## Sleep data (decoded, not yet implemented in the app)
+
+Sleep is on its own service, separate from the live metrics. The packet layout and stage codes are decoded and checked against GloryFit for one night. The app does not read or store sleep yet.
+
+| Service | Characteristic | Properties |
+|---|---|---|
+| `0x56FF` | `0x34F2` | NOTIFY |
+
+The paired write characteristic is `0x34F1` (read / write no response). Whether a request must be written to it is **unverified**: in nRF Connect the sleep packet was already sitting on `0x34F2` with no write from us, so the watch may push it as soon as you subscribe.
+
+### Packet format
+One header byte, then fixed 6-byte records. The example night was 199 bytes: `0x32` plus 33 records.
+
+```text
+byte 0        header, 0x32 (meaning unknown; not the record count)
+then, per 6-byte record:
+  [hour] [minute] [stage] [01] [00] [duration in minutes]
+```
+
+- Hour and minute are plain binary (not BCD), as a time of day. **There is no date in the packet.**
+- Records are contiguous: each start time equals the previous start plus its duration.
+- Bytes 3 and 4 of every record were `01 00` in the sample, and their meaning is unknown.
+
+| Stage code | Stage |
+|---|---|
+| `1` | Deep |
+| `2` | Light |
+| `3` | Awake |
+
+### Verified against GloryFit (one night)
+| Stage | From packet | GloryFit |
+|---|---|---|
+| Deep | 186 min | 3h 06m |
+| Light | 168 min | 2h 48m |
+| Awake | 20 min | 20m |
+| **Total** | **374 min** | **6h 14m** |
+
+The session ran 02:02 to 08:16, which is also 6h 14m.
+
+First records of the sample:
+
+| Raw bytes | Start | Stage | Duration |
+|---|---|---|---|
+| `02 02 02 01 00 0C` | 02:02 | light | 12 min |
+| `02 0E 03 01 00 03` | 02:14 | awake | 3 min |
+| `02 11 02 01 00 01` | 02:17 | light | 1 min |
+| `02 12 01 01 00 1A` | 02:18 | deep | 26 min |
+
+
+### Open questions
+- Does subscribing alone deliver the packet, or is a request to `0x34F1` needed?
+- What do the header `0x32` and the constant `01 00` bytes mean?
+- Is there any packet for multiple nights, or only the most recent one?
+- The watch's own sleep screen was empty after it synced to glory fit even though the data was still readable over BLE, so the watch screen is not a reliable indicator of what's stored.
+
+
 ### Not in scope yet
 - Data cleaning / outlier filtering (e.g. spurious 0 or 255 readings)
 - Pre-computed heart rate stats (calculated on demand from the raw tables)
