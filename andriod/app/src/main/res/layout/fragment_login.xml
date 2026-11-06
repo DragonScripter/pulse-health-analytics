@@ -41,6 +41,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/log_in" />
+    <TextView
+        android:id="@+id/tvGoToSignUp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:padding="8dp"
+        android:text="@string/no_account"
+        android:textColor="#0D6EFD" />
 
     <ProgressBar
         android:id="@+id/progress"

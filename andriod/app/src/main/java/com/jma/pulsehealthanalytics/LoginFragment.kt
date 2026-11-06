@@ -25,7 +25,11 @@ class LoginFragment : Fragment(){
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.btnLogin.setOnClickListener { attemptLogin() }
-
+        binding.tvGoToSignUp.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, SignUpFragment())
+                .commit()
+        }
     }
 
     private fun attemptLogin(){
