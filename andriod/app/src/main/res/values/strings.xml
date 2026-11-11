@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">PulseHealth</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="read">Read watch data</string>
     <string name="press">Press the button</string>
@@ -58,4 +57,14 @@
     <string name="no_account">No account? Sign up</string>
     <string name="logout">Log out</string>
     <string name="session_expired">Session expired. Please log in again.</string>
+    <string name="pulse_brand">Pulse</string>
+    <string name="watch_label">Watch</string>
+    <string name="latest_readings">Latest readings</string>
+    <string name="sleep_title">Last night</string>
+    <string name="sleep_deep">Deep</string>
+    <string name="sleep_light">Light</string>
+    <string name="sleep_awake">Awake</string>
+    <string name="sleep_empty">--</string>
+    <string name="login_subtitle">Welcome back</string>
+    <string name="signup_subtitle">Start tracking your health</string>
 </resources>
