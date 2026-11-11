@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pulse_bg">#101317</color>
+    <color name="pulse_surface">#1A1E24</color>
+    <color name="pulse_outline">#2C323A</color>
+    <color name="pulse_text">#E9ECEF</color>
+    <color name="pulse_text_secondary">#9AA3AD</color>
+    <color name="pulse_primary">#6EA8FE</color>
+    <color name="pulse_error">#F28B82</color>
+
+    <color name="pulse_sleep_deep">#A5B4FC</color>
+    <color name="pulse_sleep_light">#93C5FD</color>
+    <color name="pulse_sleep_awake">#FBBF24</color>
+</resources>

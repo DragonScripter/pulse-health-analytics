@@ -2,4 +2,16 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="pulse_bg">#F8F9FA</color>
+    <color name="pulse_surface">#FFFFFF</color>
+    <color name="pulse_outline">#DEE2E6</color>
+    <color name="pulse_text">#212529</color>
+    <color name="pulse_text_secondary">#6C757D</color>
+    <color name="pulse_primary">#0D6EFD</color>
+    <color name="pulse_error">#D32F2F</color>
+
+    <!-- Sleep stages -->
+    <color name="pulse_sleep_deep">#4F46E5</color>
+    <color name="pulse_sleep_light">#2F80ED</color>
+    <color name="pulse_sleep_awake">#D97706</color>
 </resources>
