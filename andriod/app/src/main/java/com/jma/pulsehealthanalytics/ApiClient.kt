@@ -7,6 +7,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 data class AuthResult(val code: Int, val message: String?, val token: String? = null)
 
@@ -16,10 +19,13 @@ object ApiClient {
     lateinit var http: OkHttpClient
         private set
 
+
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
     fun init(context: Context) {
         tokenStore = TokenStore(context)
         http = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(tokenStore))
+            .addInterceptor(AuthInterceptor(tokenStore) { _sessionExpired.tryEmit(Unit) })
             .build()
     }
 
@@ -75,6 +81,7 @@ object ApiClient {
                     -1
                 }
             }
+    fun logout() = tokenStore.clear()
 
 
 
