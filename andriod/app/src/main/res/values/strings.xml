@@ -56,4 +56,6 @@
     <string name="error_signup_failed">Could not create the account.</string>
     <string name="error_network">Network error. Check your connection.</string>
     <string name="no_account">No account? Sign up</string>
+    <string name="logout">Log out</string>
+    <string name="session_expired">Session expired. Please log in again.</string>
 </resources>

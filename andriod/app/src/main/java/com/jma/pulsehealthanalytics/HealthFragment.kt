@@ -78,6 +78,10 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
                 .addToBackStack(null)
                 .commit()
         }
+        binding.btnLogout.setOnClickListener {
+            ApiClient.logout()
+            (requireActivity() as MainActivity).showLogin()
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 watchVm.metrics.collect { m ->
