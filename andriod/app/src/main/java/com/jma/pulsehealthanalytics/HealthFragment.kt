@@ -1,64 +1,29 @@
 package com.jma.pulsehealthanalytics
 
-import android.os.Bundle
-import android.view.View
-import android.widget.Toast
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.OxygenSaturationRecord
-import androidx.health.connect.client.records.Record
-import androidx.health.connect.client.records.RestingHeartRateRecord
-import androidx.health.connect.client.records.SleepSessionRecord
-import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.request.AggregateRequest
-import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.time.TimeRangeFilter
-import com.jma.pulsehealthanalytics.databinding.FragmentHealthBinding
-import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
-import java.time.Duration
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.jma.pulsehealthanalytics.databinding.FragmentHealthBinding
+import kotlinx.coroutines.launch
+
+/**
+ * Dashboard fed entirely by our own BLE pipeline (WatchStreamViewModel).
+ * No Health Connect / GloryFit.
+ */
 class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private var _binding: FragmentHealthBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var client: HealthConnectClient
-    private val http = ApiClient.http
-    private val permissions = setOf(
-        HealthPermission.getReadPermission(HeartRateRecord::class),
-        HealthPermission.getReadPermission(StepsRecord::class),
-        HealthPermission.getReadPermission(SleepSessionRecord::class),
-        HealthPermission.getReadPermission(OxygenSaturationRecord::class),
-        HealthPermission.getReadPermission(RestingHeartRateRecord::class)
-    )
-
-    private val requestPermissions = registerForActivityResult(
-        PermissionController.createRequestPermissionResultContract()
-    ) { granted ->
-        if (granted.containsAll(permissions)) readData()
-        else binding.tvResult.text = getString(R.string.permission_denied)
-    }
     private val watchVm: WatchStreamViewModel by viewModels()
 
     private val blePermission = registerForActivityResult(
@@ -70,11 +35,10 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentHealthBinding.bind(view)
-        binding.btnRead.setOnClickListener { checkAndRead() }
+
         binding.btnGoToLogger.setOnClickListener {
-            val workoutFragment = WorkoutLogger()
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, workoutFragment)
+                .replace(R.id.fragment_container, WorkoutLogger())
                 .addToBackStack(null)
                 .commit()
         }
@@ -82,24 +46,44 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
             ApiClient.logout()
             (requireActivity() as MainActivity).showLogin()
         }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                watchVm.metrics.collect { m ->
-                    val none = getString(R.string.no_data)
-                    binding.tvWatch.text = getString(
-                        R.string.watch_live,
-                        m.heartRate?.toString() ?: none,
-                        m.spo2?.toString() ?: none,
-                        m.steps?.toString() ?: none,
-                        m.distanceMetres?.toString() ?: none,
-                        m.caloriesKcal?.toString() ?: none,
-                        if (m.connected) "connected" else "disconnected",
-                    )
+
+                launch {
+                    watchVm.metrics.collect { m ->
+                        val none = getString(R.string.no_data)
+                        binding.tvWatch.text = getString(
+                            R.string.watch_live,
+                            m.heartRate?.toString() ?: none,
+                            m.spo2?.toString() ?: none,
+                            m.steps?.toString() ?: none,
+                            m.distanceMetres?.toString() ?: none,
+                            m.caloriesKcal?.toString() ?: none,
+                            if (m.connected) "connected" else "disconnected",
+                        )
+                    }
+                }
+
+                launch {
+                    watchVm.sleep.collect { t ->
+                        val empty = getString(R.string.sleep_empty)
+                        binding.tvSleepTotal.text = t?.let { fmt(it.totalMin) } ?: empty
+                        binding.tvSleepDeep.text = t?.let { fmt(it.deepMin) } ?: empty
+                        binding.tvSleepLight.text = t?.let { fmt(it.lightMin) } ?: empty
+                        binding.tvSleepAwake.text = t?.let { fmt(it.awakeMin) } ?: empty
+                    }
                 }
             }
         }
 
-        if (ContextCompat.checkSelfPermission(
+        startWatch()
+    }
+
+    private fun startWatch() {
+        // BLUETOOTH_CONNECT is a runtime permission only on API 31+.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            ContextCompat.checkSelfPermission(
                 requireContext(), Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
         ) {
@@ -109,125 +93,7 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
         }
     }
 
-    private fun checkAndRead() {
-        when (HealthConnectClient.getSdkStatus(requireContext())) {
-            HealthConnectClient.SDK_AVAILABLE -> {
-                client = HealthConnectClient.getOrCreate(requireContext())
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val granted = client.permissionController.getGrantedPermissions()
-                    if (granted.containsAll(permissions)) readData()
-                    else requestPermissions.launch(permissions)
-                }
-            }
-            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED ->
-                binding.tvResult.text = getString(R.string.health_update_required)
-            else ->
-                binding.tvResult.text = getString(R.string.health_unavailable)
-        }
-    }
-
-    private fun readData() {
-        viewLifecycleOwner.lifecycleScope.launch {
-
-            val end = Instant.now()
-            val start = end.minus(1, ChronoUnit.DAYS)
-            val sleepStart = end.minus(2, ChronoUnit.DAYS)
-            val range = TimeRangeFilter.between(start, end)
-            //heart rate
-            val heartRecords = readAll<HeartRateRecord>(start, end)
-
-            val samples = heartRecords
-                .flatMap { it.samples }
-                .sortedByDescending { it.time }
-
-            val lastSample = samples.firstOrNull()
-
-            val lastBpm = lastSample?.beatsPerMinute
-            val lastTime = lastSample?.time
-                ?.atZone(ZoneId.systemDefault())
-                ?.toLocalTime()
-            //resting heart rate
-            val restingRecord = readAll<RestingHeartRateRecord>(start,end)
-                .maxByOrNull { it.time }
-                ?.beatsPerMinute
-
-            //sleep
-            val lastSleep = readAll<SleepSessionRecord>(sleepStart, end)
-                .maxByOrNull { it.endTime }
-            val sleepHours = lastSleep?.let{
-                Duration.between(it.startTime, it.endTime).toMinutes()/60.0
-            }
-            //steps
-            val steps = client.aggregate(
-                AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), range)
-            )[StepsRecord.COUNT_TOTAL]
-
-            //heart rate list
-            val list = samples.take(100).joinToString("\n") {
-                "${it.time.atZone(ZoneId.systemDefault()).toLocalTime()}  ${it.beatsPerMinute} bpm"
-            }
-            binding.tvResult.text = getString(
-                R.string.health_result,
-                lastBpm?.toString() ?: getString(R.string.no_data),
-                lastTime?.toString() ?: "-",
-                (steps ?: 0).toString(),
-                restingRecord?.toString() ?: getString(R.string.no_data),
-                sleepHours?.let { String.format("%.1f", it) } ?: getString(R.string.no_data),
-                list
-            )
-            val payload = JSONObject().apply {
-                put("steps", steps ?: 0)
-                put("sleepHours", sleepHours ?: JSONObject.NULL)
-                put("heartRate", JSONArray().apply {
-                    samples.forEach {
-                        put(
-                            JSONObject()
-                                .put("time", it.time.toString())
-                                .put("bpm", it.beatsPerMinute)
-                        )
-                    }
-                })
-            }
-            val ok = sendToServer(payload)
-            Toast.makeText(
-                requireContext(),
-                getString(if (ok ) R.string.sent_ok else R.string.sent_failed),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-    private suspend fun sendToServer(payload: JSONObject): Boolean = withContext(Dispatchers.IO){
-        try {
-            val body = payload.toString().toRequestBody("application/json".toMediaType())
-            val request = Request.Builder()
-                .url("${BuildConfig.API_URL}/api/metricsData")
-                .post(body)
-                .build()
-            http.newCall(request).execute().use { it.isSuccessful }
-        }
-        catch (e: Exception){
-            android.util.Log.e("Send", "failed", e)
-            false
-        }
-    }
-    private suspend inline fun<reified T : Record> readAll(start: Instant, end: Instant): List<T>{
-        val all = mutableListOf<T>()
-        var pageToken: String? = null
-
-        do {
-            val response = client.readRecords(
-                ReadRecordsRequest(
-                    recordType = T::class,
-                    timeRangeFilter = TimeRangeFilter.between(start,end),
-                    pageSize = 1000,
-                    pageToken = pageToken
-                )
-            )
-            all += response.records
-            pageToken = response.pageToken
-        } while (pageToken != null)
-        return all
-    }
+    private fun fmt(minutes: Int) = "${minutes / 60}h ${minutes % 60}m"
 
     override fun onDestroyView() {
         super.onDestroyView()
