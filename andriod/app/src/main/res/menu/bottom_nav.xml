@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_dashboard"
+        android:title="Dashboard" />
+    <item android:id="@+id/nav_sleep"
+        android:icon="@drawable/ic_bedtime"
+        android:title="Sleep" />
+    <item
+        android:id="@+id/nav_workouts"
+        android:icon="@drawable/ic_fitness_center"
+        android:title="Workouts" />
+</menu>

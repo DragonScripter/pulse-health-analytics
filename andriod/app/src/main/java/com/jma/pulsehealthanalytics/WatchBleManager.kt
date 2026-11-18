@@ -17,6 +17,8 @@ import android.util.Log
 import java.util.ArrayDeque
 import java.util.UUID
 
+/** What the user-facing connection state is, as opposed to a bare connected/disconnected flag. */
+enum class WatchLink { IDLE, BLUETOOTH_OFF, CONNECTING, CONNECTED, RECONNECTING }
 
 /**
  * Connects to the watch by MAC address, subscribes to its vendor characteristics
@@ -37,6 +39,9 @@ class WatchBleManager(
         fun onActivity(steps: Int, distanceMetres: Int, caloriesKcal: Int)
         fun onConnectionChanged(connected: Boolean) {}
 
+        /** Richer connection state for the UI (connecting, reconnecting, bluetooth off...). */
+        fun onLinkState(state: WatchLink) {}
+
         /**
          * Complete raw sleep packet from 0x34F2, delivered AFTER it has been logged
          * as hex. Decode it off the BLE callback thread; post once per night.
@@ -54,17 +59,48 @@ class WatchBleManager(
     @Volatile
     private var negotiatedMtu = DEFAULT_MTU
 
-    fun connect() {
+    fun connect(isRetry: Boolean = false) {
         shuttingDown = false
         val adapter: BluetoothAdapter? =
             (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
         if (adapter == null || !adapter.isEnabled) {
             Log.w(TAG, "Bluetooth unavailable or disabled")
+            listener.onLinkState(WatchLink.BLUETOOTH_OFF)
+            // Keep polling so we recover on our own once the user turns Bluetooth on.
+            scheduleRetry()
             return
         }
+        listener.onLinkState(if (isRetry) WatchLink.RECONNECTING else WatchLink.CONNECTING)
         val device = adapter.getRemoteDevice(macAddress)
         gatt?.close()
         gatt = device.connectGatt(context, false, callback, BluetoothDevice_TRANSPORT_LE)
+    }
+
+    /** User-initiated "try again now": drop whatever we have and start fresh. */
+    fun reconnectNow() {
+        shuttingDown = false
+        mainHandler.removeCallbacksAndMessages(null)
+        pendingSubscriptions.clear()
+        gatt?.let {
+            try {
+                it.disconnect()
+            } catch (e: Exception) {
+                Log.w(TAG, "disconnect failed", e)
+            }
+            try {
+                it.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "close failed", e)
+            }
+        }
+        gatt = null
+        negotiatedMtu = DEFAULT_MTU
+        connect()
+    }
+
+    private fun scheduleRetry() {
+        if (shuttingDown) return
+        mainHandler.postDelayed({ if (!shuttingDown) connect(isRetry = true) }, RECONNECT_DELAY_MS)
     }
 
     /** Safely tears down the GATT connection and releases all resources. */
@@ -119,6 +155,7 @@ class WatchBleManager(
                 BluetoothProfile.STATE_CONNECTED -> {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         listener.onConnectionChanged(true)
+                        listener.onLinkState(WatchLink.CONNECTED)
                         // The sleep packet is ~199 bytes; negotiate MTU first,
                         // then discover services from onMtuChanged.
                         if (!g.requestMtu(REQUESTED_MTU)) {
@@ -127,6 +164,9 @@ class WatchBleManager(
                         }
                     } else {
                         g.close()
+                        if (gatt === g) gatt = null
+                        listener.onLinkState(WatchLink.RECONNECTING)
+                        scheduleRetry()
                     }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
@@ -136,7 +176,8 @@ class WatchBleManager(
                     g.close()
                     if (gatt === g) gatt = null
                     if (!shuttingDown) {
-                        mainHandler.postDelayed({ if (!shuttingDown) connect() }, RECONNECT_DELAY_MS)
+                        listener.onLinkState(WatchLink.RECONNECTING)
+                        scheduleRetry()
                     }
                 }
             }

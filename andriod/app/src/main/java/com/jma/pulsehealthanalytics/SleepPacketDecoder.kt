@@ -10,9 +10,9 @@ object SleepStage {
 }
 
 data class SleepTotals(val deepMin: Int, val lightMin: Int, val awakeMin: Int) {
-    val totalMin: Int get() = deepMin + lightMin + awakeMin
+    val asleepMin: Int get() = deepMin + lightMin
+    val totalMin: Int get() = deepMin + lightMin + awakeMin // time in bed
 }
-
 /**
  * Decodes the 0x34F2 sleep packet:
  *   byte 0  header 0x32

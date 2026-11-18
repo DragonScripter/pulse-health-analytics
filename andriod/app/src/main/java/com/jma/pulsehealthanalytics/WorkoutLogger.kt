@@ -74,12 +74,10 @@ class WorkoutLogger : Fragment() {
 
             if (aiRecommendation != null) {
                 Toast.makeText(requireContext(), "Workout Saved!", Toast.LENGTH_SHORT).show()
+                binding.etExerciseName.text?.clear()
                 binding.etSets.text?.clear()
                 binding.etReps.text?.clear()
                 binding.etWeight.text?.clear()
-
-                kotlinx.coroutines.delay(2500.milliseconds)
-                parentFragmentManager.popBackStack()
             }
 
         }
