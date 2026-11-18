@@ -49,9 +49,7 @@ class LoginFragment : Fragment(){
 
             when (result.code){
                 200 -> {
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, HealthFragment())
-                        .commit()
+                    (requireActivity() as MainActivity).showMain()
                 }
                 401 -> showError("Invalid email or password.")
                 429 -> showError("Too many attempts. Try again later.")
