@@ -11,7 +11,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -21,22 +21,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
-/**
- * Dashboard fed entirely by our own BLE pipeline (WatchStreamViewModel).
- * No Health Connect / GloryFit.
- *
- * Layout reuse:
- *  - btnRead       -> "Reconnect watch" / "Bluetooth settings"
- *  - tvResult      -> plain-language status and hints
- *  - tvWatch       -> live readings, dimmed while the watch is not connected
- *  - tvSleepStatus -> when last night arrived and whether the server saved it
- */
+/** Glanceable dashboard. Each card opens its own tab. Data comes from WatchStreamViewModel. */
 class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private var _binding: FragmentHealthBinding? = null
     private val binding get() = _binding!!
 
-    private val watchVm: WatchStreamViewModel by viewModels()
+    // Activity-scoped so the BLE connection survives tab switches.
+    private val watchVm: WatchStreamViewModel by activityViewModels()
 
     private var permissionDenied = false
 
@@ -62,15 +54,15 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
                 )
             }
         }
-        binding.btnGoToLogger.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, WorkoutLogger())
-                .addToBackStack(null)
-                .commit()
-        }
         binding.btnLogout.setOnClickListener {
             ApiClient.logout()
             (requireActivity() as MainActivity).showLogin()
+        }
+        binding.cardSleep.setOnClickListener {
+            (requireActivity() as MainActivity).openSleepTab()
+        }
+        binding.cardWorkouts.setOnClickListener {
+            (requireActivity() as MainActivity).openWorkoutsTab()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -86,57 +78,67 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
                     watchVm.sleep.collect { s ->
                         val empty = getString(R.string.sleep_empty)
                         val t = s.totals
-                        binding.tvSleepTotal.text = t?.let { fmt(it.totalMin) } ?: empty
-                        binding.tvSleepDeep.text = t?.let { fmt(it.deepMin) } ?: empty
-                        binding.tvSleepLight.text = t?.let { fmt(it.lightMin) } ?: empty
-                        binding.tvSleepAwake.text = t?.let { fmt(it.awakeMin) } ?: empty
-                        binding.tvSleepStatus.text = sleepStatus(s)
+                        binding.tvSleepTotal.text = t?.let { fmtDuration(it.asleepMin) } ?: empty
+                        binding.tvSleepDeep.text = t?.let { fmtDuration(it.deepMin) } ?: empty
+                        binding.tvSleepLight.text = t?.let { fmtDuration(it.lightMin) } ?: empty
+                        binding.tvSleepAwake.text = t?.let { fmtDuration(it.awakeMin) } ?: empty
+                        binding.tvSleepStatus.text = sleepStatusText(requireContext(), s)
                     }
                 }
+
+                // Refreshes each time the dashboard becomes visible (e.g. after logging a workout).
+                launch { renderWorkouts(WorkoutSummaryApi.fetch()) }
             }
         }
 
         startWatch()
     }
 
-    private fun sleepStatus(s: SleepState): String {
-        val at = s.receivedAtMillis ?: return "No sleep data received from the watch yet."
-        val whenStr = DateUtils.formatDateTime(
-            requireContext(), at,
-            DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_WEEKDAY
-        )
-        return when (s.upload) {
-            SleepUpload.PENDING -> "Received $whenStr · saving…"
-            SleepUpload.UPLOADED -> "Received $whenStr · saved to your account"
-            SleepUpload.FAILED ->
-                "Received $whenStr · not saved (${s.detail ?: "error"}). " +
-                        "Will retry the next time the watch reconnects."
+    private fun renderWorkouts(s: WorkoutSummary?) {
+        if (_binding == null) return
+        if (s == null) {
+            binding.tvWorkoutWeek.text = "Couldn't load workouts"
+            binding.tvWorkoutLast.text = "Check your connection and reopen this tab."
+            return
         }
+        if (s.last == null) {
+            binding.tvWorkoutWeek.text = "No workouts yet"
+            binding.tvWorkoutLast.text = "Tap to log your first one."
+            return
+        }
+        val entries = if (s.weekEntries == 1) "1 entry" else "${s.weekEntries} entries"
+        binding.tvWorkoutWeek.text = "$entries · ${"%,.0f".format(s.weekVolume)} lbs"
+        val l = s.last
+        val ago = DateUtils.getRelativeTimeSpanString(
+            l.atMillis, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS,
+            DateUtils.FORMAT_ABBREV_RELATIVE,
+        )
+        binding.tvWorkoutLast.text =
+            "Last: ${l.name} · ${l.sets}×${l.reps} @ ${num(l.weight)} · $ago"
     }
+
+    private fun num(d: Double) = if (d % 1.0 == 0.0) d.toInt().toString() else "%.1f".format(d)
 
     private fun render(m: WatchMetrics) {
         if (_binding == null) return
         val none = getString(R.string.no_data)
-        val label = when (m.link) {
-            WatchLink.IDLE -> "Not started"
-            WatchLink.BLUETOOTH_OFF -> "Bluetooth off"
-            WatchLink.CONNECTING -> "Connecting…"
-            WatchLink.CONNECTED -> "Connected"
-            WatchLink.RECONNECTING -> "Reconnecting…"
-        }
-        binding.tvWatch.text = getString(
-            R.string.watch_live,
-            m.heartRate?.toString() ?: none,
-            m.spo2?.toString() ?: none,
-            m.steps?.toString() ?: none,
-            m.distanceMetres?.toString() ?: none,
-            m.caloriesKcal?.toString() ?: none,
-            label,
-        )
+
+        binding.tvSteps.text = m.steps?.let { "%,d".format(it) } ?: none
+        binding.tvDistance.text = m.distanceMetres?.let { "%.1f km".format(it / 1000.0) } ?: none
+        binding.tvCalories.text = m.caloriesKcal?.toString() ?: none
+        binding.tvHeartRate.text = m.heartRate?.toString() ?: none
+        binding.tvSpo2.text = m.spo2?.let { "$it%" } ?: none
+
         // Last known values stay visible but look stale while we're not connected.
-        binding.tvWatch.alpha = if (m.connected) 1f else 0.5f
+        val alpha = if (m.connected) 1f else 0.5f
+        listOf(
+            binding.tvSteps, binding.tvDistance, binding.tvCalories,
+            binding.tvHeartRate, binding.tvSpo2,
+        ).forEach { it.alpha = alpha }
 
         binding.tvResult.text = hint(m)
+        // The reconnect button only appears when it's useful.
+        binding.btnRead.visibility = if (m.connected) View.GONE else View.VISIBLE
         binding.btnRead.text =
             if (m.link == WatchLink.BLUETOOTH_OFF) "Bluetooth settings" else "Reconnect watch"
     }
@@ -158,7 +160,7 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
                         "Keep it nearby, and make sure the GloryFit app isn't holding the connection." +
                         (last?.let { " $it" } ?: "")
             WatchLink.CONNECTED ->
-                last?.let { "Connected. $it" }
+                last?.let { "Connected · $it" }
                     ?: "Connected. Waiting for the first reading from your watch…"
         }
     }
@@ -181,14 +183,8 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
 
     private fun startWatch() {
         // BLUETOOTH_CONNECT is a runtime permission only on API 31+.
-        if (hasBlePermission()) {
-            watchVm.start()
-        } else {
-            blePermission.launch(Manifest.permission.BLUETOOTH_CONNECT)
-        }
+        if (hasBlePermission()) watchVm.start() else blePermission.launch(Manifest.permission.BLUETOOTH_CONNECT)
     }
-
-    private fun fmt(minutes: Int) = "${minutes / 60}h ${minutes % 60}m"
 
     override fun onDestroyView() {
         super.onDestroyView()
