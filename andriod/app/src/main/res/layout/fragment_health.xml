@@ -231,6 +231,13 @@
                             android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
+                <TextView
+                    android:id="@+id/tvSleepStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="@color/pulse_text_secondary"
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
