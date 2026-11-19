@@ -64,6 +64,12 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
         binding.cardWorkouts.setOnClickListener {
             (requireActivity() as MainActivity).openWorkoutsTab()
         }
+        binding.cardWeight.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, WeightFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -88,6 +94,7 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
 
                 // Refreshes each time the dashboard becomes visible (e.g. after logging a workout).
                 launch { renderWorkouts(WorkoutSummaryApi.fetch()) }
+                launch { renderWeight(WeightApi.trend()) }
             }
         }
 
@@ -189,5 +196,22 @@ class HealthFragment : Fragment(R.layout.fragment_health) {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+    private fun renderWeight(t: WeightTrend?) {
+        if (_binding == null) return
+        when {
+            t == null -> {
+                binding.tvWeightMain.text = "Couldn't load weight"
+                binding.tvWeightSub.text = "Check your connection and reopen this tab."
+            }
+            t.currentAvg == null -> {
+                binding.tvWeightMain.text = "No weigh-ins yet"
+                binding.tvWeightSub.text = "Tap to log today's weight."
+            }
+            else -> {
+                binding.tvWeightMain.text = "${"%.1f".format(t.currentAvg)} lbs · 7-day avg"
+                binding.tvWeightSub.text = velocityText(t.velocityPerWeek)
+            }
+        }
     }
 }
