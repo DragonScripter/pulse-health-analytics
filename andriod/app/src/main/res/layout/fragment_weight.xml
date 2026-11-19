@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/pulse_bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="Body weight"
+            android:textColor="@color/pulse_text"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/tvWeightAvg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/pulse_text"
+            android:textSize="36sp" />
+
+        <TextView
+            android:id="@+id/tvWeightVelocity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/pulse_text_secondary"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/etBodyWeight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:hint="Today's weight (lbs)"
+            android:importantForAutofill="no"
+            android:inputType="numberDecimal"
+            android:textColor="@color/pulse_text"
+            android:textColorHint="@color/pulse_text_secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveWeight"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="8dp"
+            android:text="Save weigh-in" />
+
+        <TextView
+            android:id="@+id/tvWeightStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/pulse_text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Recent"
+            android:textAllCaps="true"
+            android:textColor="@color/pulse_text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvWeightHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="6sp"
+            android:textColor="@color/pulse_text"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Weigh yourself at the same time each day, ideally in the morning. Logging again on the same day replaces that day's entry."
+            android:textColor="@color/pulse_text_secondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>
